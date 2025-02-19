@@ -223,6 +223,16 @@ object JavascriptLiteral {
   implicit def literalString: JavascriptLiteral[String] = toJsString
 
   /**
+   * Convert a Scala Short to Javascript number
+   */
+  implicit def literalShort: JavascriptLiteral[Short] = _.toString
+
+  /**
+   * Convert a Java Short to Javascript number (or Javascript null if given Short value is null)
+   */
+  implicit def literalJavaShort: JavascriptLiteral[java.lang.Short] = toJsValue
+
+  /**
    * Convert a Scala Int to Javascript number
    */
   implicit def literalInt: JavascriptLiteral[Int] = _.toString
@@ -243,6 +253,26 @@ object JavascriptLiteral {
   implicit def literalJavaLong: JavascriptLiteral[java.lang.Long] = toJsValue
 
   /**
+   * Convert a Scala Float to Javascript number
+   */
+  implicit def literalFloat: JavascriptLiteral[Float] = _.toString
+
+  /**
+   * Convert a Java Float to Javascript number (or Javascript null if given Float value is null)
+   */
+  implicit def literalJavaFloat: JavascriptLiteral[java.lang.Float] = toJsValue
+
+  /**
+   * Convert a Scala Double to Javascript number
+   */
+  implicit def literalDouble: JavascriptLiteral[Double] = _.toString
+
+  /**
+   * Convert a Java Double to Javascript number (or Javascript null if given Double value is null)
+   */
+  implicit def literalJavaDouble: JavascriptLiteral[java.lang.Double] = toJsValue
+
+  /**
    * Convert a Scala Boolean to Javascript boolean
    */
   implicit def literalBoolean: JavascriptLiteral[Boolean] = _.toString
@@ -251,6 +281,16 @@ object JavascriptLiteral {
    * Convert a Java Boolean to Javascript boolean (or Javascript null if given Boolean value is null)
    */
   implicit def literalJavaBoolean: JavascriptLiteral[java.lang.Boolean] = toJsValue
+
+  /**
+   * Convert a Scala Char to Javascript literal
+   */
+  implicit def literalChar: JavascriptLiteral[Char] = (c: Char) => toJsString(c.toString)
+
+  /**
+   * Convert a Java Character to Javascript literal (or Javascript null if given Character value is null)
+   */
+  implicit def literalJavaCharacter: JavascriptLiteral[java.lang.Character] = toJsString(_)
 
   /**
    * Convert a Scala Option to Javascript literal (use null for None)
@@ -354,7 +394,7 @@ object QueryStringBindable extends QueryStringBindableMacros {
         }
       }
     def unbind(key: String, value: Char) =
-      s"${_urlEncode(key)}=$value"
+      s"${_urlEncode(key)}=${_urlEncode(value.toString)}"
   }
 
   /**
@@ -437,7 +477,7 @@ object QueryStringBindable extends QueryStringBindableMacros {
         _.toString,
         (s, _) => s"Cannot parse parameter $s as Boolean: should be true, false, 0 or 1"
       ) {
-    override def javascriptUnbind = """function(k,v){return k+'='+(!!v)}"""
+    override def javascriptUnbind = """function(k,v){return encodeURIComponent(k)+'='+(!!v)}"""
   }
 
   /**
@@ -505,8 +545,9 @@ object QueryStringBindable extends QueryStringBindableMacros {
           .getOrElse(Right(OptionalInt.empty))
       )
     }
-    def unbind(key: String, value: OptionalInt) = value.toScala.getOrElse(0).toString
-    override def javascriptUnbind               = javascriptUnbindOption(super.javascriptUnbind)
+    def unbind(key: String, value: OptionalInt) =
+      value.toScala.map(implicitly[QueryStringBindable[java.lang.Integer]].unbind(key, _)).getOrElse("")
+    override def javascriptUnbind = javascriptUnbindOption(super.javascriptUnbind)
   }
 
   /**
@@ -521,8 +562,9 @@ object QueryStringBindable extends QueryStringBindableMacros {
           .getOrElse(Right(OptionalLong.empty))
       )
     }
-    def unbind(key: String, value: OptionalLong) = value.toScala.getOrElse(0L).toString
-    override def javascriptUnbind                = javascriptUnbindOption(super.javascriptUnbind)
+    def unbind(key: String, value: OptionalLong) =
+      value.toScala.map(implicitly[QueryStringBindable[java.lang.Long]].unbind(key, _)).getOrElse("")
+    override def javascriptUnbind = javascriptUnbindOption(super.javascriptUnbind)
   }
 
   /**
@@ -538,8 +580,9 @@ object QueryStringBindable extends QueryStringBindableMacros {
             .getOrElse(Right(OptionalDouble.empty))
         )
       }
-      def unbind(key: String, value: OptionalDouble) = value.toScala.getOrElse(0.0).toString
-      override def javascriptUnbind                  = javascriptUnbindOption(super.javascriptUnbind)
+      def unbind(key: String, value: OptionalDouble) =
+        value.toScala.map(implicitly[QueryStringBindable[java.lang.Double]].unbind(key, _)).getOrElse("")
+      override def javascriptUnbind = javascriptUnbindOption(super.javascriptUnbind)
     }
 
   private def javascriptUnbindOption(jsUnbindT: String) = "function(k,v){return v!=null?(" + jsUnbindT + ")(k,v):''}"
@@ -703,6 +746,17 @@ object PathBindable extends PathBindableMacros {
   implicit def bindableCharacter: PathBindable[java.lang.Character] = bindableChar.transform(Char.box, Char.unbox)
 
   /**
+   * Path binder for Short.
+   */
+  implicit object bindableShort
+      extends Parsing[Short](_.toShort, _.toString, (s, e) => s"Cannot parse parameter $s as Short: ${e.getMessage}")
+
+  /**
+   * Path binder for Java Short.
+   */
+  implicit def bindableJavaShort: PathBindable[java.lang.Short] = bindableShort.transform(Short.box, Short.unbox)
+
+  /**
    * Path binder for Int.
    */
   implicit object bindableInt
@@ -804,6 +858,8 @@ object PathBindable extends PathBindableMacros {
     def register[T](implicit pb: PathBindable[T], ct: ClassTag[T]) = ct.runtimeClass -> pb
     Map(
       register[String],
+      register[java.lang.Character],
+      register[java.lang.Short],
       register[java.lang.Integer],
       register[java.lang.Long],
       register[java.lang.Double],

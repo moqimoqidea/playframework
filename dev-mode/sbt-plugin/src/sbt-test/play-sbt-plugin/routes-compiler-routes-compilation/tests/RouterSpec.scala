@@ -13,12 +13,19 @@ object RouterSpec extends PlaySpecification {
 
   "reverse routes containing boolean parameters" in {
     "the query string" in {
-      controllers.routes.Application.takeBool(true).url must equalTo("/take-bool?b=true")
-      controllers.routes.Application.takeBool(false).url must equalTo("/take-bool?b=false")
+      controllers.routes.Application.takeBool(true).url must equalTo("/take-bool?b%3D=true")
+      controllers.routes.Application.takeBool(false).url must equalTo("/take-bool?b%3D=false")
     }
     "the path" in {
       controllers.routes.Application.takeBool2(true).url must equalTo("/take-bool-2/true")
       controllers.routes.Application.takeBool2(false).url must equalTo("/take-bool-2/false")
+    }
+  }
+
+  "reverse routes containing char parameters" in {
+    "the query string" in {
+      controllers.routes.Application.takeChar('z').url must equalTo("/take-char?x=z")
+      controllers.routes.Application.takeChar('π').url must equalTo("/take-char?x=%CF%80")
     }
   }
 
@@ -40,16 +47,36 @@ object RouterSpec extends PlaySpecification {
     }
   }
 
+  "reverse routes containing Optional[Int|Long|Double] parameters" in {
+    "the query string" in {
+      controllers.routes.Application.takeOptionalInt(java.util.OptionalInt.of(789)).url must equalTo("/take-joptint?x=789")
+      controllers.routes.Application.takeOptionalInt(java.util.OptionalInt.empty()).url must equalTo("/take-joptint")
+      controllers.routes.Application.takeOptionalIntWithDefault(java.util.OptionalInt.empty()).url must equalTo("/take-joptint-d")
+      controllers.routes.Application.takeOptionalIntWithDefault(java.util.OptionalInt.of(123)).url must equalTo("/take-joptint-d")
+      controllers.routes.Application.takeOptionalIntWithDefault(java.util.OptionalInt.of(987)).url must equalTo("/take-joptint-d?x=987")
+      controllers.routes.Application.takeOptionalLong(java.util.OptionalLong.of(789L)).url must equalTo("/take-joptlong?x=789")
+      controllers.routes.Application.takeOptionalLong(java.util.OptionalLong.empty()).url must equalTo("/take-joptlong")
+      controllers.routes.Application.takeOptionalLongWithDefault(java.util.OptionalLong.empty()).url must equalTo("/take-joptlong-d")
+      controllers.routes.Application.takeOptionalLongWithDefault(java.util.OptionalLong.of(123L)).url must equalTo("/take-joptlong-d")
+      controllers.routes.Application.takeOptionalLongWithDefault(java.util.OptionalLong.of(987)).url must equalTo("/take-joptlong-d?x=987")
+      controllers.routes.Application.takeOptionalDouble(java.util.OptionalDouble.of(7.89)).url must equalTo("/take-joptdouble?x=7.89")
+      controllers.routes.Application.takeOptionalDouble(java.util.OptionalDouble.empty()).url must equalTo("/take-joptdouble")
+      controllers.routes.Application.takeOptionalDoubleWithDefault(java.util.OptionalDouble.empty()).url must equalTo("/take-joptdouble-d")
+      controllers.routes.Application.takeOptionalDoubleWithDefault(java.util.OptionalDouble.of(1.23)).url must equalTo("/take-joptdouble-d")
+      controllers.routes.Application.takeOptionalDoubleWithDefault(java.util.OptionalDouble.of(9.87)).url must equalTo("/take-joptdouble-d?x=9.87")
+    }
+  }
+
   "bind boolean parameters" in {
     "from the query string" in new WithApplication() {
       override def running() = {
-        val result = route(implicitApp, FakeRequest(GET, "/take-bool?b=true")).get
+        val result = route(implicitApp, FakeRequest(GET, "/take-bool?b%3D=true")).get
         contentAsString(result) must equalTo("true")
-        val result2 = route(implicitApp, FakeRequest(GET, "/take-bool?b=false")).get
+        val result2 = route(implicitApp, FakeRequest(GET, "/take-bool?b%3D=false")).get
         contentAsString(result2) must equalTo("false")
         // Bind boolean values from 1 and 0 integers too
-        contentAsString(route(implicitApp, FakeRequest(GET, "/take-bool?b=1")).get) must equalTo("true")
-        contentAsString(route(implicitApp, FakeRequest(GET, "/take-bool?b=0")).get) must equalTo("false")
+        contentAsString(route(implicitApp, FakeRequest(GET, "/take-bool?b%3D=1")).get) must equalTo("true")
+        contentAsString(route(implicitApp, FakeRequest(GET, "/take-bool?b%3D=0")).get) must equalTo("false")
       }
     }
     "from the path" in new WithApplication() {
@@ -222,6 +249,90 @@ object RouterSpec extends PlaySpecification {
     }
   )
   testQueryParamBinding(
+    "Character",
+    "take-jchar",
+    "x=z",
+    "z", // calls takeCharacter(...)
+    whenNoValue = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    }
+  )
+  testQueryParamBinding(
+    "java.util.Optional[Character]",
+    "take-jchar-jopt",
+    "x=z",
+    "z", // calls takeCharacterOptional(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("emptyOptional")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("emptyOptional")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "Short",
+    "take-short",
+    "x=789",
+    "789", // calls takeShort(...)
+    whenNoValue = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    }
+  )
+  testQueryParamBinding(
+    "Option[Short]",
+    "take-short-opt",
+    "x=789",
+    "789", // calls takeShortOption(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("emptyOption")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("emptyOption")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "java.lang.Short",
+    "take-jshort",
+    "x=789",
+    "789", // calls takeJavaShort(...)
+    whenNoValue = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must contain("Missing parameter: x")
+      status(result) must equalTo(BAD_REQUEST)
+    }
+  )
+  testQueryParamBinding(
+    "java.util.Optional[java.lang.Short]",
+    "take-jshort-jopt",
+    "x=789",
+    "789", // calls takeJavaShortOptional(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("emptyOptional")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("emptyOptional")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
     "Int",
     "take-int",
     "x=789",
@@ -378,6 +489,34 @@ object RouterSpec extends PlaySpecification {
     }
   )
   testQueryParamBinding(
+    "java.util.List[Character]",
+    "take-jlist-jchar",
+    "x=z",
+    "z", // calls takeJavaListCharacter(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty List() was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty List() was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "java.util.Optional[java.util.List[Character]]",
+    "take-jlist-jchar-jopt",
+    "x=z",
+    "z", // calls takeJavaListCharacterOptional(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty Some(List()) was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty Some(List()) was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
     "java.util.List[String]",
     "take-jlist-str",
     "x=x&x=y&x=z",
@@ -404,6 +543,62 @@ object RouterSpec extends PlaySpecification {
     },
     whenNoParam = result => {
       contentAsString(result) must equalTo("") // means empty list Optinal.of(List()) was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "List[Short]",
+    "take-slist-short",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeListShort(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty List() was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty List() was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "Option[List[Short]]",
+    "take-slist-short-opt",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeListShortOption(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty list Some(List()) was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty list Some(List()) was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "java.util.List[java.lang.Short]",
+    "take-jlist-jshort",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeJavaListShort(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty list List() was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty list List() was passed to action
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBinding(
+    "java.util.Optional[java.util.List[java.lang.Short]]",
+    "take-jlist-jshort-jopt",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeJavaListShortOptional(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("") // means empty list Optional.of(List()) was passed to action
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("") // means empty list Optional.of(List()) was passed to action
       status(result) must equalTo(OK)
     }
   )
@@ -530,6 +725,90 @@ object RouterSpec extends PlaySpecification {
     },
     whenNoParam = result => {
       contentAsString(result) must equalTo("a")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "Character",
+    "take-jchar",
+    "x=z",
+    "z", // calls takeCharacterWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("a")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("a")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.util.Optional[Character]",
+    "take-jchar-jopt",
+    "x=z",
+    "z", // calls takeCharacterOptionalWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("a")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("a")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "Short",
+    "take-short",
+    "x=789",
+    "789", // calls takeShortWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "Option[Short]",
+    "take-short-opt",
+    "x=789",
+    "789", // calls takeShortOptionWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.lang.Short",
+    "take-jshort",
+    "x=789",
+    "789", // calls takeJavaShortWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.util.Optional[java.lang.Short]",
+    "take-jshort-jopt",
+    "x=789",
+    "789", // calls takeJavaShortOptionalWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("123")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("123")
       status(result) must equalTo(OK)
     }
   )
@@ -690,6 +969,34 @@ object RouterSpec extends PlaySpecification {
     }
   )
   testQueryParamBindingWithDefault(
+    "java.util.List[Character]",
+    "take-jlist-jchar",
+    "x=z",
+    "z", // calls takeJavaListCharacterWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("a,b,c")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("a,b,c")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.util.Optional[java.util.List[Character]]",
+    "take-jlist-jchar-jopt",
+    "x=z",
+    "z", // calls takeJavaListCharacterOptionalWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("a,b,c")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("a,b,c")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
     "java.util.List[String]",
     "take-jlist-str",
     "x=x&x=y&x=z",
@@ -716,6 +1023,62 @@ object RouterSpec extends PlaySpecification {
     },
     whenNoParam = result => {
       contentAsString(result) must equalTo("abc,def,ghi")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "List[Short]",
+    "take-slist-short",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeListShortWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "Option[List[Short]]",
+    "take-slist-short-opt",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeListShortOptionWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.util.List[java.lang.Short]",
+    "take-jlist-jshort",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeJavaListShortWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    }
+  )
+  testQueryParamBindingWithDefault(
+    "java.util.Optional[java.util.List[java.lang.Short]]",
+    "take-jlist-jshort-jopt",
+    "x=7&x=8&x=9",
+    "7,8,9", // calls takeJavaListShortOptionalWithDefault(...)
+    whenNoValue = result => {
+      contentAsString(result) must equalTo("1,2,3")
+      status(result) must equalTo(OK)
+    },
+    whenNoParam = result => {
+      contentAsString(result) must equalTo("1,2,3")
       status(result) must equalTo(OK)
     }
   )
