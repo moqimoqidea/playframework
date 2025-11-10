@@ -86,8 +86,8 @@ object Dependencies {
 
   val jpaDeps = Seq(
     "jakarta.persistence" % "jakarta.persistence-api" % "3.2.0",
-    "org.hibernate.orm"   % "hibernate-core"          % "7.1.4.Final" % "test",
-    "org.hibernate.orm"   % "hibernate-scan-jandex"   % "7.1.4.Final" % "test"
+    "org.hibernate.orm"   % "hibernate-core"          % "7.1.7.Final" % "test",
+    "org.hibernate.orm"   % "hibernate-scan-jandex"   % "7.1.7.Final" % "test"
   )
 
   def scalaReflect(scalaVersion: String) = CrossVersion.partialVersion(scalaVersion) match {
@@ -115,7 +115,7 @@ object Dependencies {
   )
 
   val javaFormsDeps = Seq(
-    "org.hibernate.validator" % "hibernate-validator" % "9.0.1.Final",
+    "org.hibernate.validator" % "hibernate-validator" % "9.1.0.Final",
     ("org.springframework"    % "spring-context"      % springFrameworkVersion)
       .exclude("org.springframework", "spring-aop")
       .exclude("org.springframework", "spring-beans")
@@ -188,7 +188,7 @@ object Dependencies {
 
   val jimfs = "com.google.jimfs" % "jimfs" % "1.3.1"
 
-  val okHttp = "com.squareup.okhttp3" % "okhttp-jvm" % "5.2.1"
+  val okHttp = "com.squareup.okhttp3" % "okhttp-jvm" % "5.3.0"
 
   def routesCompilerDependencies(scalaVersion: String) = {
     specs2Deps.map(_ % Test) ++ Seq(specsMatcherExtra % Test) ++ scalaParserCombinators(
@@ -274,7 +274,7 @@ object Dependencies {
       ExclusionRule("commons-io", "commons-io") // comes with outdated commons-io
     ),
     "commons-beanutils"       % "commons-beanutils"       % "1.11.0", // explicitly bump for fluentlenium and htmlunit to fix CVE-2025-48734
-    "commons-io"              % "commons-io"              % "2.20.0", // explicitly bump commons-io to newer version for fluentlenium and htmlunit
+    "commons-io"              % "commons-io"              % "2.21.0", // explicitly bump commons-io to newer version for fluentlenium and htmlunit
     "org.seleniumhq.selenium" % "selenium-api"            % seleniumVersion,
     "org.seleniumhq.selenium" % "selenium-support"        % seleniumVersion,
     "org.seleniumhq.selenium" % "selenium-firefox-driver" % seleniumVersion
@@ -292,7 +292,7 @@ object Dependencies {
     "org.ehcache"    % "jcache"  % "1.0.1"
   ) ++ jcacheApi
 
-  val caffeineVersion  = "3.2.2"
+  val caffeineVersion  = "3.2.3"
   val playCaffeineDeps = Seq(
     "com.github.ben-manes.caffeine" % "caffeine" % caffeineVersion,
     "com.github.ben-manes.caffeine" % "jcache"   % caffeineVersion
